@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "username": "admin",
+    "model_name": "glm-4-airx",
+    "created_at": 1776852000,
+    "token_used": 3784,
+    "count": 1,
+    "quota": 2592
+  },
+  {
+    "id": 2,
+    "user_id": 1,
+    "username": "admin",
+    "model_name": "glm-4",
+    "created_at": 1776852000,
+    "token_used": 44,
+    "count": 2,
+    "quota": 314
+  },
+  {
+    "id": 3,
+    "user_id": 1,
+    "username": "admin",
+    "model_name": "glm-4.6",
+    "created_at": 1776852000,
+    "token_used": 3813,
+    "count": 1,
+    "quota": 142988
+  },
+  {
+    "id": 4,
+    "user_id": 1,
+    "username": "admin",
+    "model_name": "glm-4",
+    "created_at": 1777186800,
+    "token_used": 22,
+    "count": 1,
+    "quota": 157
+  },
+  {
+    "id": 5,
+    "user_id": 1,
+    "username": "admin",
+    "model_name": "glm-4v",
+    "created_at": 1777186800,
+    "token_used": 8806,
+    "count": 3,
+    "quota": 30158
+  },
+  {
+    "id": 6,
+    "user_id": 2,
+    "username": "wzq",
+    "model_name": "glm-4v",
+    "created_at": 1777194000,
+    "token_used": 5431,
+    "count": 3,
+    "quota": 18599
+  },
+  {
+    "id": 7,
+    "user_id": 2,
+    "username": "wzq",
+    "model_name": "glm-4.6",
+    "created_at": 1777194000,
+    "token_used": 7130,
+    "count": 2,
+    "quota": 267375
+  }
+]

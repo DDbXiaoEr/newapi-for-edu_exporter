@@ -1,0 +1,80 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/quanxiaoer/newapi_exporter/config"
+	"github.com/quanxiaoer/newapi_exporter/db"
+	"github.com/quanxiaoer/newapi_exporter/exporter"
+	"github.com/quanxiaoer/newapi_exporter/metrics"
+)
+
+func main() {
+	cfg := config.Load()
+
+	dbPath := flag.String("db", cfg.DatabasePath, "path to SQLite database file")
+	outputDir := flag.String("out", "output", "output directory")
+	outputFormat := flag.String("format", cfg.OutputFormat, "output format (json/csv)")
+	servePort := flag.String("serve", "", "start prometheus HTTP server on :port")
+	flag.Parse()
+
+	cfg.DatabasePath = *dbPath
+	cfg.OutputFormat = *outputFormat
+
+	database, err := db.Open(cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+	defer database.Close()
+
+	if *servePort != "" {
+		runServer(database, *servePort)
+		return
+	}
+
+	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+		log.Fatalf("failed to create output directory: %v", err)
+	}
+
+	exp := exporter.New(database, cfg)
+
+	tables := map[string]func() (interface{}, error){
+		"statistics": func() (interface{}, error) { return exp.ExportStatistics() },
+		"quota_data": func() (interface{}, error) { return exp.ExportQuotaData() },
+		"tokens":     func() (interface{}, error) { return exp.ExportTokens() },
+		"users":      func() (interface{}, error) { return exp.ExportUsers() },
+	}
+
+	for name, exportFn := range tables {
+		data, err := exportFn()
+		if err != nil {
+			log.Printf("warning: failed to export %s: %v", name, err)
+			continue
+		}
+
+		path := fmt.Sprintf("%s/%s.%s", *outputDir, name, cfg.OutputFormat)
+		if err := exp.WriteOutput(data, path, cfg.OutputFormat); err != nil {
+			log.Printf("warning: failed to write %s: %v", name, err)
+			continue
+		}
+		fmt.Printf("exported: %s\n", path)
+	}
+}
+
+func runServer(database *db.Database, port string) {
+	collector := metrics.NewCollector(database.Conn())
+	prometheus.MustRegister(collector)
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	addr := ":" + port
+	fmt.Printf("serving metrics on %s/metrics\n", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}

@@ -1,0 +1,148 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "display_name": {
+      "String": "Root User",
+      "Valid": true
+    },
+    "role": 100,
+    "status": 1,
+    "email": {
+      "String": "",
+      "Valid": true
+    },
+    "github_id": {
+      "String": "",
+      "Valid": true
+    },
+    "discord_id": {
+      "String": "",
+      "Valid": true
+    },
+    "oidc_id": {
+      "String": "",
+      "Valid": true
+    },
+    "wechat_id": {
+      "String": "",
+      "Valid": true
+    },
+    "telegram_id": {
+      "String": "",
+      "Valid": true
+    },
+    "access_token": {
+      "String": "",
+      "Valid": false
+    },
+    "quota": 99824262,
+    "used_quota": 175738,
+    "request_count": 5,
+    "group": "default",
+    "aff_code": {
+      "String": "yRqQ",
+      "Valid": true
+    },
+    "aff_count": 0,
+    "aff_quota": 0,
+    "aff_history": 0,
+    "inviter_id": {
+      "Int64": 0,
+      "Valid": true
+    },
+    "deleted_at": {
+      "Time": "0001-01-01T00:00:00Z",
+      "Valid": false
+    },
+    "linux_do_id": {
+      "String": "",
+      "Valid": true
+    },
+    "setting": {
+      "String": "",
+      "Valid": true
+    },
+    "remark": {
+      "String": "",
+      "Valid": true
+    },
+    "stripe_customer": {
+      "String": "",
+      "Valid": true
+    }
+  },
+  {
+    "id": 2,
+    "username": "wzq",
+    "display_name": {
+      "String": "wzq",
+      "Valid": true
+    },
+    "role": 1,
+    "status": 1,
+    "email": {
+      "String": "",
+      "Valid": true
+    },
+    "github_id": {
+      "String": "",
+      "Valid": true
+    },
+    "discord_id": {
+      "String": "",
+      "Valid": true
+    },
+    "oidc_id": {
+      "String": "",
+      "Valid": true
+    },
+    "wechat_id": {
+      "String": "",
+      "Valid": true
+    },
+    "telegram_id": {
+      "String": "",
+      "Valid": true
+    },
+    "access_token": {
+      "String": "",
+      "Valid": false
+    },
+    "quota": 49714626,
+    "used_quota": 285974,
+    "request_count": 5,
+    "group": "default",
+    "aff_code": {
+      "String": "MpVe",
+      "Valid": true
+    },
+    "aff_count": 0,
+    "aff_quota": 0,
+    "aff_history": 0,
+    "inviter_id": {
+      "Int64": 0,
+      "Valid": true
+    },
+    "deleted_at": {
+      "Time": "0001-01-01T00:00:00Z",
+      "Valid": false
+    },
+    "linux_do_id": {
+      "String": "",
+      "Valid": true
+    },
+    "setting": {
+      "String": "{\"gotify_priority\":0,\"sidebar_modules\":\"{\\\"chat\\\":{\\\"chat\\\":true,\\\"enabled\\\":true,\\\"playground\\\":true},\\\"console\\\":{\\\"detail\\\":true,\\\"enabled\\\":true,\\\"log\\\":true,\\\"midjourney\\\":true,\\\"task\\\":true,\\\"token\\\":true},\\\"personal\\\":{\\\"enabled\\\":true,\\\"personal\\\":true,\\\"topup\\\":true}}\"}",
+      "Valid": true
+    },
+    "remark": {
+      "String": "",
+      "Valid": true
+    },
+    "stripe_customer": {
+      "String": "",
+      "Valid": true
+    }
+  }
+]
