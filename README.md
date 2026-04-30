@@ -2,6 +2,7 @@
 
 
 # newapi_exporter
+本仓库所有文件均由AI生成（因为本人是个偏瘫患者所以求轻吐槽代码质量）
 
 One-API 数据 Prometheus 指标导出器
 
