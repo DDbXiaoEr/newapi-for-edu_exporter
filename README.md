@@ -1,99 +1,105 @@
-
-
-
 # newapi_exporter
+
 本仓库所有文件均由AI生成（因为本人是个偏瘫患者所以求轻吐槽代码质量）
 
-One-API 数据 Prometheus 指标导出器
-
-## 项目简介
-
-newapi_exporter 是一个用于将 One-API 数据库中的数据导出为 Prometheus 指标的 Go 应用。它可以从 SQLite 数据库中读取用户、令牌和配额数据，并将这些数据转换为 Prometheus 监控指标，同时支持导出为 JSON 和 CSV 格式。
+[new-api](https://github.com/Calcium-Ion/new-api) (LLM API gateway) 数据导出器 —— 支持 Prometheus 指标暴露与 JSON/CSV 文件导出。
 
 ## 功能特性
 
-- **Prometheus 指标导出**：将数据库数据导出为 Prometheus 可拉取的指标
-- **多格式支持**：支持 JSON 和 CSV 格式的数据导出
-- **统计数据查询**：提供系统统计数据，包括用户数、令牌数、配额使用等
-- **HTTP 服务**：内置 HTTP 服务器用于 Prometheus 拉取指标
-- **配置管理**：支持通过环境变量进行配置
-
-## 技术栈
-
-- Go
-- Prometheus Client
-- SQLite
+- **双模式运行**：文件导出或 Prometheus HTTP 指标服务
+- **多数据库支持**：SQLite 和 MySQL
+- **多格式输出**：JSON 和 CSV
+- **Prometheus 指标**：活跃用户数、总 Token 使用量、总请求数
 
 ## 快速开始
-
-### 编译运行
 
 ```bash
 # 编译
 make build
 
-# 或手动编译
-go build -o bin/newapi-exporter
+# 文件导出模式（SQLite）
+./bin/newapi-exporter -db newapi.db -out output -format json
 
-# 运行
-./bin/newapi-exporter
+# MySQL 导出
+./bin/newapi-exporter -db-type mysql -mysql-host 127.0.0.1 -mysql-port 3306 \
+  -mysql-user root -mysql-password secret -mysql-database newapi
+
+# Prometheus 指标服务
+./bin/newapi-exporter -db newapi.db -serve 9090
 ```
 
-### 配置说明
+## 命令行参数
 
-支持通过环境变量配置：
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `-db-type` | `sqlite` | 数据库类型：`sqlite` / `mysql` |
+| `-db` | `newapi.db` | SQLite 数据库文件路径 |
+| `-mysql-host` | `localhost` | MySQL 主机地址 |
+| `-mysql-port` | `3306` | MySQL 端口 |
+| `-mysql-user` | `root` | MySQL 用户名 |
+| `-mysql-password` | (空) | MySQL 密码 |
+| `-mysql-database` | `newapi` | MySQL 数据库名 |
+| `-out` | `output` | 文件导出输出目录 |
+| `-format` | `json` | 输出格式：`json` / `csv` |
+| `-serve` | (空) | 启动 Prometheus HTTP 服务，值为端口号 |
 
-| 环境变量 | 说明 | 默认值 |
-|---------|------|-------|
-| PORT | HTTP 服务端口 | 9520 |
-| DB_PATH | 数据库文件路径 | one-api.db |
-| OUTPUT_PATH | 输出目录 | output |
+## 环境变量
+
+所有参数均可通过环境变量设置（命令行参数优先级更高）：
+
+| 环境变量 | 默认值 |
+|---|---|
+| `NEWAPI_DB_TYPE` | `sqlite` |
+| `NEWAPI_DB_PATH` | `newapi.db` |
+| `NEWAPI_OUTPUT_FORMAT` | `json` |
+| `NEWAPI_MYSQL_HOST` | `localhost` |
+| `NEWAPI_MYSQL_PORT` | `3306` |
+| `NEWAPI_MYSQL_USER` | `root` |
+| `NEWAPI_MYSQL_PASSWORD` | (空) |
+| `NEWAPI_MYSQL_DATABASE` | `newapi` |
+
+## Prometheus 指标
+
+启动 `-serve` 后，访问 `/metrics` 暴露以下指标：
+
+| 指标 | 类型 | 说明 |
+|---|---|---|
+| `newapi_user_count` | Gauge | 活跃（未删除）用户数 |
+| `newapi_total_tokens` | Gauge | quota_data 中 token_used 总和 |
+| `newapi_total_requests` | Gauge | quota_data 中 count 总和 |
 
 ### Prometheus 配置
-
-参考 `prometheus.yml.example` 配置 Prometheus 来拉取指标：
 
 ```yaml
 scrape_configs:
   - job_name: 'newapi_exporter'
     static_configs:
-      - targets: ['localhost:9520']
+      - targets: ['localhost:9090']
 ```
 
-## 数据模型
+## 导出文件
 
-### 用户 (users)
+文件导出模式会在输出目录生成以下文件：
 
-- 用户基本信息
-- 配额限制
-- 使用统计
+- `statistics.{format}` - 统计概览（用户数、Token、请求量）
+- `quota_data.{format}` - 配额使用记录
+- `tokens.{format}` - API 令牌信息
+- `users.{format}` - 用户信息
 
-### 令牌 (tokens)
+## 开发
 
-- API 令牌信息
-- 关联用户
-- 限额配置
+```bash
+make build    # 编译到 bin/newapi-exporter
+make test     # 运行测试
+make lint     # 代码检查 (go vet)
+make clean    # 清理构建产物和输出目录
+```
 
-### 配额数据 (quota_data)
+## 依赖
 
-- 配额使用记录
-- 时间戳信息
-- 使用量统计
-
-### 统计数据 (statistics)
-
-- 系统总用户数
-- 总令牌数
-- 活跃配额数
-
-## 输出示例
-
-导出的数据会保存在 `output/` 目录下：
-
-- `users.json` - 用户数据
-- `tokens.json` - 令牌数据
-- `quota_data.json` - 配额数据
-- `statistics.json` - 统计数据
+- `github.com/mattn/go-sqlite3` - SQLite 驱动（需 CGO）
+- `github.com/go-sql-driver/mysql` - MySQL 驱动
+- `github.com/prometheus/client_golang` - Prometheus 客户端
 
 ## 许可证
 
