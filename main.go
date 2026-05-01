@@ -19,16 +19,28 @@ import (
 func main() {
 	cfg := config.Load()
 
+	dbType := flag.String("db-type", cfg.DBType, "database type (sqlite/mysql)")
 	dbPath := flag.String("db", cfg.DatabasePath, "path to SQLite database file")
+	mysqlHost := flag.String("mysql-host", cfg.MySQLHost, "MySQL host")
+	mysqlPort := flag.String("mysql-port", cfg.MySQLPort, "MySQL port")
+	mysqlUser := flag.String("mysql-user", cfg.MySQLUser, "MySQL user")
+	mysqlPassword := flag.String("mysql-password", cfg.MySQLPassword, "MySQL password")
+	mysqlDatabase := flag.String("mysql-database", cfg.MySQLDatabase, "MySQL database name")
 	outputDir := flag.String("out", "output", "output directory")
 	outputFormat := flag.String("format", cfg.OutputFormat, "output format (json/csv)")
 	servePort := flag.String("serve", "", "start prometheus HTTP server on :port")
 	flag.Parse()
 
+	cfg.DBType = *dbType
 	cfg.DatabasePath = *dbPath
+	cfg.MySQLHost = *mysqlHost
+	cfg.MySQLPort = *mysqlPort
+	cfg.MySQLUser = *mysqlUser
+	cfg.MySQLPassword = *mysqlPassword
+	cfg.MySQLDatabase = *mysqlDatabase
 	cfg.OutputFormat = *outputFormat
 
-	database, err := db.Open(cfg.DatabasePath)
+	database, err := db.Open(cfg)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}

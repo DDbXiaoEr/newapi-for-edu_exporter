@@ -40,9 +40,9 @@ func (e *Exporter) ExportQuotaData() ([]models.QuotaData, error) {
 
 func (e *Exporter) ExportTokens() ([]models.Token, error) {
 	rows, err := e.db.Conn().Query(`
-		SELECT id, user_id, key, status, name, created_time, accessed_time, expired_time,
+		SELECT id, user_id, ` + "`key`" + `, status, ` + "`name`" + `, created_time, accessed_time, expired_time,
 		       remain_quota, unlimited_quota, model_limits_enabled, model_limits,
-		       allow_ips, used_quota, "group", cross_group_retry, deleted_at
+		       allow_ips, used_quota, ` + "`group`" + `, cross_group_retry, deleted_at
 		FROM tokens`)
 	if err != nil {
 		return nil, fmt.Errorf("query tokens: %w", err)
@@ -67,7 +67,7 @@ func (e *Exporter) ExportUsers() ([]models.User, error) {
 	rows, err := e.db.Conn().Query(`
 		SELECT id, username, password, display_name, role, status, email,
 		       github_id, discord_id, oidc_id, wechat_id, telegram_id,
-		       access_token, quota, used_quota, request_count, "group",
+		       access_token, quota, used_quota, request_count, ` + "`group`" + `,
 		       aff_code, aff_count, aff_quota, aff_history, inviter_id,
 		       deleted_at, linux_do_id, setting, remark, stripe_customer
 		FROM users`)
