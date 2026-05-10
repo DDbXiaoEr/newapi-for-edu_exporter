@@ -16,6 +16,12 @@ import (
 	"github.com/quanxiaoer/newapi_exporter/metrics"
 )
 
+var (
+	Version   = "dev"
+	Commit    = "unknown"
+	BuildTime = "unknown"
+)
+
 func main() {
 	configPath := flag.String("config", "", "path to YAML configuration file")
 	dbType := flag.String("db-type", "", "database type (sqlite/mysql)")
@@ -28,7 +34,13 @@ func main() {
 	outputDir := flag.String("out", "output", "output directory")
 	outputFormat := flag.String("format", "", "output format (json/csv)")
 	servePort := flag.String("serve", "", "start prometheus HTTP server on :port")
+	version := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("newapi-exporter %s (commit: %s, built: %s)\n", Version, Commit, BuildTime)
+		return
+	}
 
 	cfg := config.LoadWithConfigFile(*configPath)
 
