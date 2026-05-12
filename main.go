@@ -22,20 +22,40 @@ var (
 	BuildTime = "unknown"
 )
 
+func printHelp() {
+	fmt.Printf(`newapi-exporter %s (commit: %s, built: %s)
+
+Usage:
+  newapi-exporter [flags]
+
+Flags:
+  -config string    Path to YAML configuration file (default: auto-detect config.yaml/config.yml)
+  -out string       Output directory for file export (default: "output")
+  -format string    Output format: json or csv (default: json)
+  -serve string     Start Prometheus HTTP server on :port
+  -version          Print version and exit
+  -help             Print help and exit
+
+Database configuration is specified via config file or environment variables.
+See AGENTS.md for full documentation.
+`, Version, Commit, BuildTime)
+}
+
 func main() {
 	configPath := flag.String("config", "", "path to YAML configuration file")
-	dbType := flag.String("db-type", "", "database type (sqlite/mysql)")
-	dbPath := flag.String("db", "", "path to SQLite database file")
-	mysqlHost := flag.String("mysql-host", "", "MySQL host")
-	mysqlPort := flag.String("mysql-port", "", "MySQL port")
-	mysqlUser := flag.String("mysql-user", "", "MySQL user")
-	mysqlPassword := flag.String("mysql-password", "", "MySQL password")
-	mysqlDatabase := flag.String("mysql-database", "", "MySQL database name")
 	outputDir := flag.String("out", "output", "output directory")
 	outputFormat := flag.String("format", "", "output format (json/csv)")
 	servePort := flag.String("serve", "", "start prometheus HTTP server on :port")
 	version := flag.Bool("version", false, "print version and exit")
+	help := flag.Bool("help", false, "print help and exit")
+
+	flag.Usage = printHelp
 	flag.Parse()
+
+	if *help {
+		printHelp()
+		return
+	}
 
 	if *version {
 		fmt.Printf("newapi-exporter %s (commit: %s, built: %s)\n", Version, Commit, BuildTime)
@@ -44,27 +64,6 @@ func main() {
 
 	cfg := config.LoadWithConfigFile(*configPath)
 
-	if *dbType != "" {
-		cfg.DBType = *dbType
-	}
-	if *dbPath != "" {
-		cfg.DatabasePath = *dbPath
-	}
-	if *mysqlHost != "" {
-		cfg.MySQLHost = *mysqlHost
-	}
-	if *mysqlPort != "" {
-		cfg.MySQLPort = *mysqlPort
-	}
-	if *mysqlUser != "" {
-		cfg.MySQLUser = *mysqlUser
-	}
-	if *mysqlPassword != "" {
-		cfg.MySQLPassword = *mysqlPassword
-	}
-	if *mysqlDatabase != "" {
-		cfg.MySQLDatabase = *mysqlDatabase
-	}
 	if *outputFormat != "" {
 		cfg.OutputFormat = *outputFormat
 	}

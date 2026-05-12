@@ -40,27 +40,46 @@ See `databasetable.md` for full schema.
 
 **File export:**
 ```bash
-go run . -db one-api.db -out output -format json
+go run . -out output -format json
 ```
 
 **Prometheus HTTP server:**
 ```bash
-go run . -db one-api.db -serve 9090
+go run . -serve 9090
 ```
 
 **Flags:**
 | Flag | Default | Description |
 |---|---|---|
-| `-db` | `newapi.db` | Path to SQLite database |
+| `-config` | (auto-detect) | Path to YAML configuration file |
 | `-out` | `output` | Output directory (file export mode) |
 | `-format` | `json` | Output format: `json` or `csv` |
 | `-serve` | (none) | Start Prometheus HTTP server on port |
 
-**Environment variables (fallback for flags):**
+**Configuration file (`config.yaml`):**
+```yaml
+db_type: sqlite          # sqlite or mysql
+database_path: newapi.db # path to SQLite database file
+output_format: json      # json or csv
+mysql_host: localhost
+mysql_port: "3306"
+mysql_user: root
+mysql_password: ""
+mysql_database: newapi
+```
+
+**Environment variables (override config file):**
 | Variable | Default |
 |---|---|
+| `NEWAPI_CONFIG_FILE` | (auto-detect `config.yaml`/`config.yml`) |
 | `NEWAPI_DB_PATH` | `newapi.db` |
 | `NEWAPI_OUTPUT_FORMAT` | `json` |
+| `NEWAPI_DB_TYPE` | `sqlite` |
+| `NEWAPI_MYSQL_HOST` | `localhost` |
+| `NEWAPI_MYSQL_PORT` | `3306` |
+| `NEWAPI_MYSQL_USER` | `root` |
+| `NEWAPI_MYSQL_PASSWORD` | (empty) |
+| `NEWAPI_MYSQL_DATABASE` | `newapi` |
 
 ## Prometheus Metrics
 
