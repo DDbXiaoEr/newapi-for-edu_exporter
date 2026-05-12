@@ -18,45 +18,57 @@
 make build
 
 # 文件导出模式（SQLite）
-./bin/newapi-exporter -db newapi.db -out output -format json
-
-# MySQL 导出
-./bin/newapi-exporter -db-type mysql -mysql-host 127.0.0.1 -mysql-port 3306 \
-  -mysql-user root -mysql-password secret -mysql-database newapi
+./bin/newapi-exporter -out output -format json
 
 # Prometheus 指标服务
-./bin/newapi-exporter -db newapi.db -serve 9090
+./bin/newapi-exporter -serve 9090
 ```
+
+## 配置
+
+数据库连接通过配置文件指定（默认 `config.yaml` / `config.yml`），也可以通过环境变量覆盖。
+
+### 配置文件 (`config.yaml`)
+
+```yaml
+db_type: sqlite          # sqlite 或 mysql
+database_path: newapi.db # SQLite 数据库文件路径
+output_format: json      # json 或 csv
+mysql_host: localhost
+mysql_port: "3306"
+mysql_user: root
+mysql_password: ""
+mysql_database: newapi
+```
+
+### 配置优先级
+
+命令行参数 > 环境变量 > 配置文件 > 默认值
 
 ## 命令行参数
 
 | 参数 | 默认值 | 说明 |
 |---|---|---|
-| `-db-type` | `sqlite` | 数据库类型：`sqlite` / `mysql` |
-| `-db` | `newapi.db` | SQLite 数据库文件路径 |
-| `-mysql-host` | `localhost` | MySQL 主机地址 |
-| `-mysql-port` | `3306` | MySQL 端口 |
-| `-mysql-user` | `root` | MySQL 用户名 |
-| `-mysql-password` | (空) | MySQL 密码 |
-| `-mysql-database` | `newapi` | MySQL 数据库名 |
+| `-config` | 自动检测 | YAML 配置文件路径 |
 | `-out` | `output` | 文件导出输出目录 |
 | `-format` | `json` | 输出格式：`json` / `csv` |
 | `-serve` | (空) | 启动 Prometheus HTTP 服务，值为端口号 |
+| `-version` | - | 打印版本信息并退出 |
+| `-help` | - | 打印帮助信息并退出 |
 
 ## 环境变量
 
-所有参数均可通过环境变量设置（命令行参数优先级更高）：
-
-| 环境变量 | 默认值 |
-|---|---|
-| `NEWAPI_DB_TYPE` | `sqlite` |
-| `NEWAPI_DB_PATH` | `newapi.db` |
-| `NEWAPI_OUTPUT_FORMAT` | `json` |
-| `NEWAPI_MYSQL_HOST` | `localhost` |
-| `NEWAPI_MYSQL_PORT` | `3306` |
-| `NEWAPI_MYSQL_USER` | `root` |
-| `NEWAPI_MYSQL_PASSWORD` | (空) |
-| `NEWAPI_MYSQL_DATABASE` | `newapi` |
+| 环境变量 | 默认值 | 说明 |
+|---|---|---|
+| `NEWAPI_CONFIG_FILE` | 自动检测 `config.yaml` / `config.yml` | 配置文件路径 |
+| `NEWAPI_DB_TYPE` | `sqlite` | 数据库类型 |
+| `NEWAPI_DB_PATH` | `newapi.db` | SQLite 数据库文件路径 |
+| `NEWAPI_OUTPUT_FORMAT` | `json` | 输出格式 |
+| `NEWAPI_MYSQL_HOST` | `localhost` | MySQL 主机地址 |
+| `NEWAPI_MYSQL_PORT` | `3306` | MySQL 端口 |
+| `NEWAPI_MYSQL_USER` | `root` | MySQL 用户名 |
+| `NEWAPI_MYSQL_PASSWORD` | (空) | MySQL 密码 |
+| `NEWAPI_MYSQL_DATABASE` | `newapi` | MySQL 数据库名 |
 
 ## Prometheus 指标
 
