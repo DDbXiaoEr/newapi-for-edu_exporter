@@ -1,11 +1,17 @@
 # newapi_exporter 配置文件示例
 # 配置优先级: 默认值 < 配置文件 < 环境变量 < CLI 参数
 
-# 数据库类型: sqlite 或 mysql
-db_type: sqlite
+# 主数据库类型: postgres 或 mysql（已移除 sqlite）
+db_type: postgres
 
-# SQLite 数据库文件路径 (db_type=sqlite 时使用)
-database_path: newapi.db
+# PostgreSQL 连接配置 (db_type=postgres 时使用)
+# postgres_dsn: postgresql://root:123456@localhost:5432/newapi?sslmode=disable
+postgres_host: localhost
+postgres_port: "5432"
+postgres_user: root
+postgres_password: "123456"
+postgres_database: newapi
+postgres_sslmode: disable
 
 # MySQL 连接配置 (db_type=mysql 时使用)
 # mysql_host: localhost
@@ -13,6 +19,10 @@ database_path: newapi.db
 # mysql_user: root
 # mysql_password: ""
 # mysql_database: newapi
+
+# ClickHouse 日志库（可选，对应 new-api 的 LOG_SQL_DSN）
+clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
+clickhouse_table: logs
 
 # 输出格式: json 或 csv
 output_format: json

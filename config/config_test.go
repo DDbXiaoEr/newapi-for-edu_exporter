@@ -6,104 +6,184 @@ import (
 	"testing"
 )
 
+func unsetConfigEnv(t *testing.T) {
+	t.Helper()
+	keys := []string{
+		"NEWAPI_CONFIG_FILE",
+		"NEWAPI_DB_TYPE",
+		"NEWAPI_OUTPUT_FORMAT",
+		"NEWAPI_POSTGRES_DSN",
+		"SQL_DSN",
+		"NEWAPI_POSTGRES_HOST",
+		"NEWAPI_POSTGRES_PORT",
+		"NEWAPI_POSTGRES_USER",
+		"NEWAPI_POSTGRES_PASSWORD",
+		"NEWAPI_POSTGRES_DATABASE",
+		"NEWAPI_POSTGRES_SSLMODE",
+		"NEWAPI_MYSQL_HOST",
+		"NEWAPI_MYSQL_PORT",
+		"NEWAPI_MYSQL_USER",
+		"NEWAPI_MYSQL_PASSWORD",
+		"NEWAPI_MYSQL_DATABASE",
+		"NEWAPI_CLICKHOUSE_DSN",
+		"LOG_SQL_DSN",
+		"NEWAPI_CLICKHOUSE_TABLE",
+		"LOG_SQL_CLICKHOUSE_TABLE",
+		"NEWAPI_DB_PATH",
+	}
+	for _, key := range keys {
+		t.Setenv(key, "")
+		os.Unsetenv(key)
+	}
+}
+
 func TestLoadDefaults(t *testing.T) {
-	os.Unsetenv("NEWAPI_DB_TYPE")
-	os.Unsetenv("NEWAPI_DB_PATH")
-	os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	os.Unsetenv("NEWAPI_MYSQL_HOST")
-	os.Unsetenv("NEWAPI_MYSQL_PORT")
-	os.Unsetenv("NEWAPI_MYSQL_USER")
-	os.Unsetenv("NEWAPI_MYSQL_PASSWORD")
-	os.Unsetenv("NEWAPI_MYSQL_DATABASE")
-	os.Unsetenv("NEWAPI_CONFIG_FILE")
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
 
 	cfg := Load()
 
-	if cfg.DBType != "sqlite" {
-		t.Errorf("expected default DBType 'sqlite', got '%s'", cfg.DBType)
-	}
-	if cfg.DatabasePath != "newapi.db" {
-		t.Errorf("expected default DatabasePath 'newapi.db', got '%s'", cfg.DatabasePath)
+	if cfg.DBType != "postgres" {
+		t.Errorf("expected default DBType 'postgres', got '%s'", cfg.DBType)
 	}
 	if cfg.OutputFormat != "json" {
 		t.Errorf("expected default OutputFormat 'json', got '%s'", cfg.OutputFormat)
 	}
-	if cfg.MySQLHost != "localhost" {
-		t.Errorf("expected default MySQLHost 'localhost', got '%s'", cfg.MySQLHost)
+	if cfg.PostgresHost != "localhost" {
+		t.Errorf("expected default PostgresHost 'localhost', got '%s'", cfg.PostgresHost)
 	}
-	if cfg.MySQLPort != "3306" {
-		t.Errorf("expected default MySQLPort '3306', got '%s'", cfg.MySQLPort)
+	if cfg.PostgresPort != "5432" {
+		t.Errorf("expected default PostgresPort '5432', got '%s'", cfg.PostgresPort)
 	}
-	if cfg.MySQLUser != "root" {
-		t.Errorf("expected default MySQLUser 'root', got '%s'", cfg.MySQLUser)
+	if cfg.PostgresUser != "root" {
+		t.Errorf("expected default PostgresUser 'root', got '%s'", cfg.PostgresUser)
 	}
-	if cfg.MySQLPassword != "" {
-		t.Errorf("expected default MySQLPassword '', got '%s'", cfg.MySQLPassword)
+	if cfg.PostgresDatabase != "newapi" {
+		t.Errorf("expected default PostgresDatabase 'newapi', got '%s'", cfg.PostgresDatabase)
 	}
-	if cfg.MySQLDatabase != "newapi" {
-		t.Errorf("expected default MySQLDatabase 'newapi', got '%s'", cfg.MySQLDatabase)
+	if cfg.PostgresSSLMode != "disable" {
+		t.Errorf("expected default PostgresSSLMode 'disable', got '%s'", cfg.PostgresSSLMode)
+	}
+	if cfg.ClickHouseTable != "logs" {
+		t.Errorf("expected default ClickHouseTable 'logs', got '%s'", cfg.ClickHouseTable)
+	}
+	if cfg.ClickHouseDSN != "" {
+		t.Errorf("expected default ClickHouseDSN empty, got '%s'", cfg.ClickHouseDSN)
 	}
 }
 
 func TestLoadFromEnv(t *testing.T) {
-	os.Setenv("NEWAPI_DB_PATH", "/tmp/test.db")
-	os.Setenv("NEWAPI_OUTPUT_FORMAT", "csv")
-	defer func() {
-		os.Unsetenv("NEWAPI_DB_PATH")
-		os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	}()
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("NEWAPI_OUTPUT_FORMAT", "csv")
+	t.Setenv("NEWAPI_DB_TYPE", "mysql")
 
 	cfg := Load()
 
-	if cfg.DatabasePath != "/tmp/test.db" {
-		t.Errorf("expected DatabasePath '/tmp/test.db', got '%s'", cfg.DatabasePath)
-	}
 	if cfg.OutputFormat != "csv" {
 		t.Errorf("expected OutputFormat 'csv', got '%s'", cfg.OutputFormat)
+	}
+	if cfg.DBType != "mysql" {
+		t.Errorf("expected DBType 'mysql', got '%s'", cfg.DBType)
 	}
 }
 
 func TestLoadPartialEnv(t *testing.T) {
-	os.Setenv("NEWAPI_DB_PATH", "/tmp/partial.db")
-	os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	defer os.Unsetenv("NEWAPI_DB_PATH")
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("NEWAPI_POSTGRES_HOST", "pg.internal")
 
 	cfg := Load()
 
-	if cfg.DatabasePath != "/tmp/partial.db" {
-		t.Errorf("expected DatabasePath '/tmp/partial.db', got '%s'", cfg.DatabasePath)
+	if cfg.PostgresHost != "pg.internal" {
+		t.Errorf("expected PostgresHost 'pg.internal', got '%s'", cfg.PostgresHost)
 	}
 	if cfg.OutputFormat != "json" {
 		t.Errorf("expected default OutputFormat 'json' when env not set, got '%s'", cfg.OutputFormat)
 	}
 }
 
-func TestLoadWithDBPathEnv(t *testing.T) {
-	os.Setenv("NEWAPI_DB_PATH", "my_data.db")
-	defer os.Unsetenv("NEWAPI_DB_PATH")
+func TestLoadPostgresEnv(t *testing.T) {
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("NEWAPI_DB_TYPE", "postgres")
+	t.Setenv("NEWAPI_POSTGRES_HOST", "10.0.0.1")
+	t.Setenv("NEWAPI_POSTGRES_PORT", "5433")
+	t.Setenv("NEWAPI_POSTGRES_USER", "admin")
+	t.Setenv("NEWAPI_POSTGRES_PASSWORD", "secret")
+	t.Setenv("NEWAPI_POSTGRES_DATABASE", "mydb")
+	t.Setenv("NEWAPI_POSTGRES_SSLMODE", "require")
 
 	cfg := Load()
 
-	if cfg.DatabasePath != "my_data.db" {
-		t.Errorf("expected DatabasePath 'my_data.db', got '%s'", cfg.DatabasePath)
+	if cfg.DBType != "postgres" {
+		t.Errorf("expected DBType 'postgres', got '%s'", cfg.DBType)
+	}
+	if cfg.PostgresHost != "10.0.0.1" {
+		t.Errorf("expected PostgresHost '10.0.0.1', got '%s'", cfg.PostgresHost)
+	}
+	if cfg.PostgresPort != "5433" {
+		t.Errorf("expected PostgresPort '5433', got '%s'", cfg.PostgresPort)
+	}
+	if cfg.PostgresUser != "admin" {
+		t.Errorf("expected PostgresUser 'admin', got '%s'", cfg.PostgresUser)
+	}
+	if cfg.PostgresPassword != "secret" {
+		t.Errorf("expected PostgresPassword 'secret', got '%s'", cfg.PostgresPassword)
+	}
+	if cfg.PostgresDatabase != "mydb" {
+		t.Errorf("expected PostgresDatabase 'mydb', got '%s'", cfg.PostgresDatabase)
+	}
+	if cfg.PostgresSSLMode != "require" {
+		t.Errorf("expected PostgresSSLMode 'require', got '%s'", cfg.PostgresSSLMode)
+	}
+
+	dsn := cfg.PostgresDSNString()
+	if dsn != "postgres://admin:secret@10.0.0.1:5433/mydb?sslmode=require" {
+		t.Errorf("unexpected PostgresDSNString: %s", dsn)
+	}
+}
+
+func TestLoadPostgresDSNEnv(t *testing.T) {
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("SQL_DSN", "postgresql://root:123456@localhost:5432/newapi?sslmode=disable")
+
+	cfg := Load()
+
+	if cfg.PostgresDSN != "postgresql://root:123456@localhost:5432/newapi?sslmode=disable" {
+		t.Errorf("expected SQL_DSN to populate PostgresDSN, got '%s'", cfg.PostgresDSN)
+	}
+	if cfg.PostgresDSNString() != cfg.PostgresDSN {
+		t.Errorf("expected PostgresDSNString to return explicit DSN")
+	}
+}
+
+func TestLoadClickHouseEnv(t *testing.T) {
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("LOG_SQL_DSN", "clickhouse://default:@localhost:9000/newapi_audit")
+	t.Setenv("LOG_SQL_CLICKHOUSE_TABLE", "token_usage_logs")
+
+	cfg := Load()
+
+	if cfg.ClickHouseDSN != "clickhouse://default:@localhost:9000/newapi_audit" {
+		t.Errorf("expected ClickHouseDSN from LOG_SQL_DSN, got '%s'", cfg.ClickHouseDSN)
+	}
+	if cfg.ClickHouseTable != "token_usage_logs" {
+		t.Errorf("expected ClickHouseTable 'token_usage_logs', got '%s'", cfg.ClickHouseTable)
 	}
 }
 
 func TestLoadMySQLEnv(t *testing.T) {
-	os.Setenv("NEWAPI_DB_TYPE", "mysql")
-	os.Setenv("NEWAPI_MYSQL_HOST", "10.0.0.1")
-	os.Setenv("NEWAPI_MYSQL_PORT", "3307")
-	os.Setenv("NEWAPI_MYSQL_USER", "admin")
-	os.Setenv("NEWAPI_MYSQL_PASSWORD", "secret")
-	os.Setenv("NEWAPI_MYSQL_DATABASE", "mydb")
-	defer func() {
-		os.Unsetenv("NEWAPI_DB_TYPE")
-		os.Unsetenv("NEWAPI_MYSQL_HOST")
-		os.Unsetenv("NEWAPI_MYSQL_PORT")
-		os.Unsetenv("NEWAPI_MYSQL_USER")
-		os.Unsetenv("NEWAPI_MYSQL_PASSWORD")
-		os.Unsetenv("NEWAPI_MYSQL_DATABASE")
-	}()
+	unsetConfigEnv(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("NEWAPI_DB_TYPE", "mysql")
+	t.Setenv("NEWAPI_MYSQL_HOST", "10.0.0.1")
+	t.Setenv("NEWAPI_MYSQL_PORT", "3307")
+	t.Setenv("NEWAPI_MYSQL_USER", "admin")
+	t.Setenv("NEWAPI_MYSQL_PASSWORD", "secret")
+	t.Setenv("NEWAPI_MYSQL_DATABASE", "mydb")
 
 	cfg := Load()
 
@@ -128,119 +208,90 @@ func TestLoadMySQLEnv(t *testing.T) {
 }
 
 func TestLoadFromConfigFile(t *testing.T) {
-	os.Unsetenv("NEWAPI_DB_TYPE")
-	os.Unsetenv("NEWAPI_DB_PATH")
-	os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	os.Unsetenv("NEWAPI_MYSQL_HOST")
-	os.Unsetenv("NEWAPI_MYSQL_PORT")
-	os.Unsetenv("NEWAPI_MYSQL_USER")
-	os.Unsetenv("NEWAPI_MYSQL_PASSWORD")
-	os.Unsetenv("NEWAPI_MYSQL_DATABASE")
-	os.Unsetenv("NEWAPI_CONFIG_FILE")
+	unsetConfigEnv(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	content := `
+db_type: postgres
+output_format: csv
+postgres_host: 192.168.1.1
+postgres_port: "5433"
+postgres_user: fileuser
+postgres_password: filepass
+postgres_database: filedb
+postgres_sslmode: require
+clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
+clickhouse_table: logs
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := LoadWithConfigFile(path)
+
+	if cfg.DBType != "postgres" {
+		t.Errorf("expected DBType 'postgres', got '%s'", cfg.DBType)
+	}
+	if cfg.OutputFormat != "csv" {
+		t.Errorf("expected OutputFormat 'csv', got '%s'", cfg.OutputFormat)
+	}
+	if cfg.PostgresHost != "192.168.1.1" {
+		t.Errorf("expected PostgresHost '192.168.1.1', got '%s'", cfg.PostgresHost)
+	}
+	if cfg.PostgresPort != "5433" {
+		t.Errorf("expected PostgresPort '5433', got '%s'", cfg.PostgresPort)
+	}
+	if cfg.PostgresUser != "fileuser" {
+		t.Errorf("expected PostgresUser 'fileuser', got '%s'", cfg.PostgresUser)
+	}
+	if cfg.PostgresPassword != "filepass" {
+		t.Errorf("expected PostgresPassword 'filepass', got '%s'", cfg.PostgresPassword)
+	}
+	if cfg.PostgresDatabase != "filedb" {
+		t.Errorf("expected PostgresDatabase 'filedb', got '%s'", cfg.PostgresDatabase)
+	}
+	if cfg.ClickHouseDSN != "clickhouse://default:@localhost:9000/newapi_audit" {
+		t.Errorf("expected ClickHouseDSN from file, got '%s'", cfg.ClickHouseDSN)
+	}
+}
+
+func TestConfigFileEnvOverride(t *testing.T) {
+	unsetConfigEnv(t)
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 
 	content := `
 db_type: mysql
-database_path: /tmp/fromfile.db
-output_format: csv
-mysql_host: 192.168.1.1
-mysql_port: "3307"
-mysql_user: fileuser
-mysql_password: filepass
-mysql_database: filedb
-`
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := LoadWithConfigFile(path)
-
-	if cfg.DBType != "mysql" {
-		t.Errorf("expected DBType 'mysql', got '%s'", cfg.DBType)
-	}
-	if cfg.DatabasePath != "/tmp/fromfile.db" {
-		t.Errorf("expected DatabasePath '/tmp/fromfile.db', got '%s'", cfg.DatabasePath)
-	}
-	if cfg.OutputFormat != "csv" {
-		t.Errorf("expected OutputFormat 'csv', got '%s'", cfg.OutputFormat)
-	}
-	if cfg.MySQLHost != "192.168.1.1" {
-		t.Errorf("expected MySQLHost '192.168.1.1', got '%s'", cfg.MySQLHost)
-	}
-	if cfg.MySQLPort != "3307" {
-		t.Errorf("expected MySQLPort '3307', got '%s'", cfg.MySQLPort)
-	}
-	if cfg.MySQLUser != "fileuser" {
-		t.Errorf("expected MySQLUser 'fileuser', got '%s'", cfg.MySQLUser)
-	}
-	if cfg.MySQLPassword != "filepass" {
-		t.Errorf("expected MySQLPassword 'filepass', got '%s'", cfg.MySQLPassword)
-	}
-	if cfg.MySQLDatabase != "filedb" {
-		t.Errorf("expected MySQLDatabase 'filedb', got '%s'", cfg.MySQLDatabase)
-	}
-}
-
-func TestConfigFileEnvOverride(t *testing.T) {
-	os.Unsetenv("NEWAPI_DB_TYPE")
-	os.Unsetenv("NEWAPI_DB_PATH")
-	os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	os.Unsetenv("NEWAPI_MYSQL_HOST")
-	os.Unsetenv("NEWAPI_MYSQL_PORT")
-	os.Unsetenv("NEWAPI_MYSQL_USER")
-	os.Unsetenv("NEWAPI_MYSQL_PASSWORD")
-	os.Unsetenv("NEWAPI_MYSQL_DATABASE")
-	os.Unsetenv("NEWAPI_CONFIG_FILE")
-
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-
-	content := `
-db_type: sqlite
-database_path: /tmp/fromfile.db
 output_format: json
-mysql_host: 10.0.0.10
-mysql_port: "3306"
-mysql_user: fileuser
-mysql_password: filepass
-mysql_database: filedb
+postgres_host: 10.0.0.10
+clickhouse_dsn: clickhouse://file@localhost:9000/filedb
 `
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	os.Setenv("NEWAPI_DB_TYPE", "mysql")
-	os.Setenv("NEWAPI_MYSQL_HOST", "env-override.com")
-	defer func() {
-		os.Unsetenv("NEWAPI_DB_TYPE")
-		os.Unsetenv("NEWAPI_MYSQL_HOST")
-	}()
+	t.Setenv("NEWAPI_DB_TYPE", "postgres")
+	t.Setenv("NEWAPI_POSTGRES_HOST", "env-override.com")
+	t.Setenv("LOG_SQL_DSN", "clickhouse://env@localhost:9000/envdb")
 
 	cfg := LoadWithConfigFile(path)
 
-	if cfg.DBType != "mysql" {
-		t.Errorf("expected env override DBType 'mysql', got '%s'", cfg.DBType)
+	if cfg.DBType != "postgres" {
+		t.Errorf("expected env override DBType 'postgres', got '%s'", cfg.DBType)
 	}
-	if cfg.MySQLHost != "env-override.com" {
-		t.Errorf("expected env override MySQLHost 'env-override.com', got '%s'", cfg.MySQLHost)
+	if cfg.PostgresHost != "env-override.com" {
+		t.Errorf("expected env override PostgresHost 'env-override.com', got '%s'", cfg.PostgresHost)
 	}
-	if cfg.DatabasePath != "/tmp/fromfile.db" {
-		t.Errorf("expected file DatabasePath '/tmp/fromfile.db', got '%s'", cfg.DatabasePath)
+	if cfg.ClickHouseDSN != "clickhouse://env@localhost:9000/envdb" {
+		t.Errorf("expected env override ClickHouseDSN, got '%s'", cfg.ClickHouseDSN)
 	}
 }
 
 func TestConfigFilePartial(t *testing.T) {
-	os.Unsetenv("NEWAPI_DB_TYPE")
-	os.Unsetenv("NEWAPI_DB_PATH")
-	os.Unsetenv("NEWAPI_OUTPUT_FORMAT")
-	os.Unsetenv("NEWAPI_MYSQL_HOST")
-	os.Unsetenv("NEWAPI_MYSQL_PORT")
-	os.Unsetenv("NEWAPI_MYSQL_USER")
-	os.Unsetenv("NEWAPI_MYSQL_PASSWORD")
-	os.Unsetenv("NEWAPI_MYSQL_DATABASE")
-	os.Unsetenv("NEWAPI_CONFIG_FILE")
+	unsetConfigEnv(t)
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
@@ -261,8 +312,8 @@ mysql_host: partial.db.host
 	if cfg.MySQLHost != "partial.db.host" {
 		t.Errorf("expected MySQLHost 'partial.db.host', got '%s'", cfg.MySQLHost)
 	}
-	if cfg.DatabasePath != "newapi.db" {
-		t.Errorf("expected default DatabasePath 'newapi.db', got '%s'", cfg.DatabasePath)
+	if cfg.PostgresPort != "5432" {
+		t.Errorf("expected default PostgresPort '5432', got '%s'", cfg.PostgresPort)
 	}
 	if cfg.MySQLPort != "3306" {
 		t.Errorf("expected default MySQLPort '3306', got '%s'", cfg.MySQLPort)

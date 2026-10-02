@@ -1,95 +1,64 @@
 # newapi_exporter
 
-Prometheus metrics exporter for One-API data
+Prometheus metrics exporter for new-api data.
 
-## Project Overview
-
-newapi_exporter is a Go application designed to export data from One-API databases as Prometheus metrics. It reads user, token, and quota data from an SQLite database and converts it into Prometheus monitoring metrics, while also supporting export in JSON and CSV formats.
+Reads users / tokens / quota_data from PostgreSQL (or MySQL). Request logs may be read from ClickHouse. SQLite is not supported.
 
 ## Features
 
 - **Prometheus Metrics Export**: Exports database data as metrics consumable by Prometheus
-- **Multi-format Support**: Supports exporting data in JSON and CSV formats
-- **Statistics Query**: Provides system statistics including user count, token count, and quota usage
+- **Multi-format Support**: JSON and CSV file export
+- **Statistics Query**: User count, token usage, request count, and optional ClickHouse log stats
 - **HTTP Service**: Built-in HTTP server for Prometheus to scrape metrics
-- **Configuration Management**: Supports configuration via environment variables
+- **Configuration Management**: YAML config file plus environment variables (`SQL_DSN` / `LOG_SQL_DSN` compatible with new-api)
 
 ## Technology Stack
 
 - Go
 - Prometheus Client
-- SQLite
+- PostgreSQL / MySQL
+- ClickHouse (optional, logs)
 
 ## Quick Start
 
-### Build and Run
-
 ```bash
-# Build
 make build
-
-# Or build manually
-go build -o bin/newapi-exporter
-
-# Run
-./bin/newapi-exporter
+./bin/newapi-exporter -out output -format json
+./bin/newapi-exporter -serve 9090
 ```
 
 ### Configuration
 
-Configuration is supported via environment variables:
-
-| Environment Variable | Description | Default Value |
-|----------------------|-------------|---------------|
-| PORT | HTTP server port | 9520 |
-| DB_PATH | Database file path | one-api.db |
-| OUTPUT_PATH | Output directory | output |
-
-### Prometheus Configuration
-
-Refer to `prometheus.yml.example` to configure Prometheus for metric scraping:
-
 ```yaml
-scrape_configs:
-  - job_name: 'newapi_exporter'
-    static_configs:
-      - targets: ['localhost:9520']
+db_type: postgres
+postgres_host: localhost
+postgres_port: "5432"
+postgres_user: root
+postgres_password: "123456"
+postgres_database: newapi
+postgres_sslmode: disable
+clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
+clickhouse_table: logs
+output_format: json
 ```
+
+`SQL_DSN` and `LOG_SQL_DSN` from new-api are also accepted.
 
 ## Data Model
 
-### Users
+### Users / Tokens / Quota Data
 
-- User basic information
-- Quota limits
-- Usage statistics
+Primary database tables.
 
-### Tokens
+### Logs
 
-- API token information
-- Associated user
-- Rate limit configuration
-
-### Quota Data
-
-- Quota usage records
-- Timestamp information
-- Usage statistics
+ClickHouse consume logs (`prompt_tokens`, `completion_tokens`, `quota`, ...).
 
 ### Statistics
 
-- Total number of users
-- Total number of tokens
-- Number of active quotas
-
-## Output Examples
-
-Exported data is saved in the `output/` directory:
-
-- `users.json` - User data
-- `tokens.json` - Token data
-- `quota_data.json` - Quota data
-- `statistics.json` - Statistics data
+- Active user count
+- Total tokens / requests from `quota_data`
+- Optional token TPS / tokens / quota from ClickHouse
 
 ## License
 

@@ -17,9 +17,10 @@ type Token struct {
 	UnlimitedQuota     sql.NullBool   `json:"unlimited_quota"`
 	ModelLimitsEnabled sql.NullBool   `json:"model_limits_enabled"`
 	ModelLimits        sql.NullString `json:"model_limits"`
-	AllowIPs           string         `json:"allow_ips"`
+	AllowIPs           sql.NullString `json:"allow_ips"`
 	UsedQuota          int64          `json:"used_quota"`
 	Group              string         `json:"group"`
 	CrossGroupRetry    sql.NullBool   `json:"cross_group_retry"`
+	AutoGroups         sql.NullString `json:"auto_groups"`
 	DeletedAt          sql.NullTime   `json:"deleted_at"`
 }

@@ -91,6 +91,9 @@ func main() {
 		"tokens":     func() (interface{}, error) { return exp.ExportTokens() },
 		"users":      func() (interface{}, error) { return exp.ExportUsers() },
 	}
+	if database.HasLogs() {
+		tables["logs"] = func() (interface{}, error) { return exp.ExportLogs() }
+	}
 
 	for name, exportFn := range tables {
 		data, err := exportFn()
@@ -109,7 +112,7 @@ func main() {
 }
 
 func runServer(database *db.Database, port string) {
-	collector := metrics.NewCollector(database.Conn())
+	collector := metrics.NewCollector(database)
 	prometheus.MustRegister(collector)
 
 	http.Handle("/metrics", promhttp.Handler())
