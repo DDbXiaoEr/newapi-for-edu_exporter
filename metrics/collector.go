@@ -16,6 +16,7 @@ type Collector struct {
 	totalTokens   *prometheus.Desc
 	totalRequests *prometheus.Desc
 	tokenTPS      *prometheus.Desc
+	channelTPS    *prometheus.Desc
 	logTokens     *prometheus.Desc
 	logQuota      *prometheus.Desc
 }
@@ -43,6 +44,11 @@ func NewCollector(database *db.Database) *Collector {
 			"Tokens per second from consume logs over the last 60 seconds",
 			nil, nil,
 		),
+		channelTPS: prometheus.NewDesc(
+			"newapi_channel_token_tps",
+			"Tokens per second per channel from consume logs over the last 60 seconds",
+			[]string{"channel_id", "channel_name"}, nil,
+		),
 		logTokens: prometheus.NewDesc(
 			"newapi_log_tokens",
 			"Sum of prompt_tokens + completion_tokens in ClickHouse logs",
@@ -62,6 +68,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.totalRequests
 	if c.db.HasLogs() {
 		ch <- c.tokenTPS
+		ch <- c.channelTPS
 		ch <- c.logTokens
 		ch <- c.logQuota
 	}
@@ -111,6 +118,26 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	ch <- prometheus.MustNewConstMetric(c.tokenTPS, prometheus.GaugeValue, tps)
+
+	channelTPS, err := c.db.TokenTPSByChannel()
+	if err != nil {
+		log.Printf("metrics: query channel_tps: %v", err)
+	} else {
+		for _, row := range channelTPS {
+			name := row.ChannelName
+			if name == "" {
+				name = fmt.Sprintf("%d", row.ChannelID)
+			}
+			ch <- prometheus.MustNewConstMetric(
+				c.channelTPS,
+				prometheus.GaugeValue,
+				row.TPS,
+				fmt.Sprintf("%d", row.ChannelID),
+				name,
+			)
+		}
+	}
+
 	ch <- prometheus.MustNewConstMetric(c.logTokens, prometheus.GaugeValue, logTokens)
 	ch <- prometheus.MustNewConstMetric(c.logQuota, prometheus.GaugeValue, logQuota)
 }

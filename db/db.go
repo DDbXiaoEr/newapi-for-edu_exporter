@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
@@ -10,6 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/quanxiaoer/newapi_exporter/config"
+	"github.com/quanxiaoer/newapi_exporter/models"
 )
 
 const (
@@ -19,10 +21,11 @@ const (
 )
 
 type Database struct {
-	conn     *sql.DB
-	logConn  *sql.DB
-	driver   string
-	logTable string
+	conn         *sql.DB
+	logConn      *sql.DB
+	driver       string
+	logTable     string
+	channelNames map[int64]string
 }
 
 func Open(cfg *config.Config) (*Database, error) {
@@ -41,9 +44,10 @@ func Open(cfg *config.Config) (*Database, error) {
 	}
 
 	db := &Database{
-		conn:     conn,
-		driver:   driver,
-		logTable: cfg.ClickHouseTable,
+		conn:         conn,
+		driver:       driver,
+		logTable:     cfg.ClickHouseTable,
+		channelNames: parseChannelNames(cfg.ChannelNames),
 	}
 	if db.logTable == "" {
 		db.logTable = "logs"
@@ -170,6 +174,47 @@ func (d *Database) TokenTPS() (float64, error) {
 		return 0, err
 	}
 	return tps, nil
+}
+
+func (d *Database) TokenTPSByChannel() ([]models.ChannelTPS, error) {
+	if d.logConn == nil {
+		return nil, fmt.Errorf("clickhouse is not configured")
+	}
+	q := fmt.Sprintf(`
+		SELECT channel_id, COALESCE(SUM(prompt_tokens + completion_tokens), 0) / %d
+		FROM %s
+		WHERE type = %d AND created_at >= toUnixTimestamp(now()) - %d
+		GROUP BY channel_id
+		ORDER BY channel_id`,
+		TokenTPSWindow, d.logTable, LogTypeConsume, TokenTPSWindow)
+	rows, err := d.logConn.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.ChannelTPS
+	for rows.Next() {
+		var r models.ChannelTPS
+		if err := rows.Scan(&r.ChannelID, &r.TPS); err != nil {
+			return nil, err
+		}
+		r.ChannelName = d.channelNames[r.ChannelID]
+		results = append(results, r)
+	}
+	return results, rows.Err()
+}
+
+func parseChannelNames(raw map[string]string) map[int64]string {
+	names := make(map[int64]string, len(raw))
+	for idStr, name := range raw {
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			continue
+		}
+		names[id] = name
+	}
+	return names
 }
 
 func quoteIdent(driver, ident string) string {

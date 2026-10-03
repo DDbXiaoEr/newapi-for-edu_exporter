@@ -10,7 +10,7 @@ Reads users / tokens / quota_data from PostgreSQL (or MySQL). Request logs may b
 - **Multi-format Support**: JSON and CSV file export
 - **Statistics Query**: User count, token usage, request count, and optional ClickHouse log stats
 - **HTTP Service**: Built-in HTTP server for Prometheus to scrape metrics
-- **Configuration Management**: YAML config file plus environment variables (`SQL_DSN` / `LOG_SQL_DSN` compatible with new-api)
+- **Configuration Management**: YAML config file (default `./config.yaml`) plus environment variables (`SQL_DSN` / `LOG_SQL_DSN` compatible with new-api)
 
 ## Technology Stack
 
@@ -58,7 +58,17 @@ ClickHouse consume logs (`prompt_tokens`, `completion_tokens`, `quota`, ...).
 
 - Active user count
 - Total tokens / requests from `quota_data`
-- Optional token TPS / tokens / quota from ClickHouse
+- Optional token TPS / per-channel TPS / tokens / quota from ClickHouse
+
+## Screenshots
+
+![Grafana Dashboard](newapi-grafana-dashboard.png)
+
+![Grafana Dashboard (bottom)](newapi-grafana-dashboard-bottom.png)
+
+![Grafana Overview](grafana-overview.png)
+
+![Channel Token TPS](grafana-channel-tps.png)
 
 ## License
 

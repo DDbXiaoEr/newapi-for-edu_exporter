@@ -160,6 +160,11 @@ func (e *Exporter) ExportStatistics() (models.Statistics, error) {
 			return s, fmt.Errorf("query token_tps: %w", err)
 		}
 		s.TokenTPS = tps
+		channelTPS, err := e.db.TokenTPSByChannel()
+		if err != nil {
+			return s, fmt.Errorf("query channel_tps: %w", err)
+		}
+		s.ChannelTPS = channelTPS
 		if err := e.db.LogConn().QueryRow(fmt.Sprintf("SELECT COALESCE(SUM(prompt_tokens + completion_tokens), 0) FROM %s", table)).Scan(&s.LogTokens); err != nil {
 			return s, fmt.Errorf("query log_tokens: %w", err)
 		}
@@ -169,6 +174,13 @@ func (e *Exporter) ExportStatistics() (models.Statistics, error) {
 	}
 
 	return s, nil
+}
+
+func (e *Exporter) ExportChannelTPS() ([]models.ChannelTPS, error) {
+	if !e.db.HasLogs() {
+		return nil, fmt.Errorf("clickhouse is not configured")
+	}
+	return e.db.TokenTPSByChannel()
 }
 
 func (e *Exporter) WriteOutput(data interface{}, path string, format string) error {

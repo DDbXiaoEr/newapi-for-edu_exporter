@@ -10,6 +10,7 @@ bin/
 output/
 *.json
 *.csv
+!grafana/**/*.json
 
 # Database files
 *.db

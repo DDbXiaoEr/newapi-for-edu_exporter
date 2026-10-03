@@ -224,6 +224,9 @@ postgres_database: filedb
 postgres_sslmode: require
 clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
 clickhouse_table: logs
+channel_names:
+  1: OpenAI
+  2: Claude
 `
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
@@ -254,6 +257,9 @@ clickhouse_table: logs
 	}
 	if cfg.ClickHouseDSN != "clickhouse://default:@localhost:9000/newapi_audit" {
 		t.Errorf("expected ClickHouseDSN from file, got '%s'", cfg.ClickHouseDSN)
+	}
+	if cfg.ChannelNames["1"] != "OpenAI" || cfg.ChannelNames["2"] != "Claude" {
+		t.Errorf("expected channel_names from file, got %#v", cfg.ChannelNames)
 	}
 }
 
@@ -320,12 +326,76 @@ mysql_host: partial.db.host
 	}
 }
 
+func TestLoadFromCwdConfigFile(t *testing.T) {
+	unsetConfigEnv(t)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	content := `
+db_type: mysql
+mysql_host: cwd.db.host
+output_format: csv
+`
+	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := Load()
+
+	if cfg.DBType != "mysql" {
+		t.Errorf("expected DBType 'mysql' from cwd config.yaml, got '%s'", cfg.DBType)
+	}
+	if cfg.MySQLHost != "cwd.db.host" {
+		t.Errorf("expected MySQLHost 'cwd.db.host' from cwd config.yaml, got '%s'", cfg.MySQLHost)
+	}
+	if cfg.OutputFormat != "csv" {
+		t.Errorf("expected OutputFormat 'csv' from cwd config.yaml, got '%s'", cfg.OutputFormat)
+	}
+}
+
+func TestLoadFromCwdConfigYmlFallback(t *testing.T) {
+	unsetConfigEnv(t)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	content := `
+db_type: mysql
+mysql_host: yml.db.host
+`
+	if err := os.WriteFile(filepath.Join(dir, "config.yml"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := LoadWithConfigFile("config.yaml")
+
+	if cfg.MySQLHost != "yml.db.host" {
+		t.Errorf("expected MySQLHost 'yml.db.host' from cwd config.yml fallback, got '%s'", cfg.MySQLHost)
+	}
+}
+
 func TestResolveConfigPath(t *testing.T) {
+	unsetConfigEnv(t)
+	dir := t.TempDir()
+	t.Chdir(dir)
+
 	if p := resolveConfigPath(""); p != "" {
-		t.Logf("found config file: %s", p)
+		t.Errorf("expected empty path when no config in cwd, got '%s'", p)
 	}
 	if p := resolveConfigPath("/nonexistent/path.yaml"); p != "/nonexistent/path.yaml" {
 		t.Errorf("expected explicit path returned, got '%s'", p)
+	}
+
+	yamlPath := filepath.Join(dir, "config.yaml")
+	if err := os.WriteFile(yamlPath, []byte("db_type: postgres\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if p := resolveConfigPath(""); p != yamlPath {
+		t.Errorf("expected cwd config.yaml, got '%s'", p)
+	}
+	if p := resolveConfigPath("config.yaml"); p != yamlPath {
+		t.Errorf("expected cwd-relative config.yaml, got '%s'", p)
 	}
 }
 

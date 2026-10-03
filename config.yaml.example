@@ -24,5 +24,10 @@ postgres_sslmode: disable
 clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
 clickhouse_table: logs
 
+# 渠道 ID -> 显示名（可选，不连主库；Grafana 图例用 channel_name）
+# channel_names:
+#   1: OpenAI
+#   2: Claude
+
 # 输出格式: json 或 csv
 output_format: json

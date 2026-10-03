@@ -29,7 +29,7 @@ Usage:
   newapi-exporter [flags]
 
 Flags:
-  -config string    Path to YAML configuration file (default: auto-detect config.yaml/config.yml)
+  -config string    Path to YAML configuration file (default: ./config.yaml)
   -out string       Output directory for file export (default: "output")
   -format string    Output format: json or csv (default: json)
   -serve string     Start Prometheus HTTP server on :port
@@ -42,7 +42,7 @@ See AGENTS.md for full documentation.
 }
 
 func main() {
-	configPath := flag.String("config", "", "path to YAML configuration file")
+	configPath := flag.String("config", "config.yaml", "path to YAML configuration file")
 	outputDir := flag.String("out", "output", "output directory")
 	outputFormat := flag.String("format", "", "output format (json/csv)")
 	servePort := flag.String("serve", "", "start prometheus HTTP server on :port")
@@ -93,6 +93,7 @@ func main() {
 	}
 	if database.HasLogs() {
 		tables["logs"] = func() (interface{}, error) { return exp.ExportLogs() }
+		tables["channel_tps"] = func() (interface{}, error) { return exp.ExportChannelTPS() }
 	}
 
 	for name, exportFn := range tables {

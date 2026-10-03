@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,6 +29,8 @@ type Config struct {
 
 	ClickHouseDSN   string `yaml:"clickhouse_dsn"`
 	ClickHouseTable string `yaml:"clickhouse_table"`
+
+	ChannelNames map[string]string `yaml:"channel_names"`
 }
 
 func Load() *Config {
@@ -50,17 +53,52 @@ func LoadWithConfigFile(configPath string) *Config {
 
 func resolveConfigPath(explicitPath string) string {
 	if explicitPath != "" {
-		return explicitPath
+		path := cwdPath(explicitPath)
+		if fileExists(path) {
+			return path
+		}
+		if alt := yamlAlt(path); alt != "" && fileExists(alt) {
+			return alt
+		}
+		return path
 	}
 	if p := os.Getenv("NEWAPI_CONFIG_FILE"); p != "" {
-		return p
+		return cwdPath(p)
 	}
 	for _, name := range []string{"config.yaml", "config.yml"} {
-		if _, err := os.Stat(name); err == nil {
-			return name
+		path := cwdPath(name)
+		if fileExists(path) {
+			return path
 		}
 	}
 	return ""
+}
+
+func cwdPath(path string) string {
+	if path == "" || filepath.IsAbs(path) {
+		return path
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return path
+	}
+	return filepath.Join(cwd, path)
+}
+
+func yamlAlt(path string) string {
+	switch filepath.Ext(path) {
+	case ".yaml":
+		return path[:len(path)-len(".yaml")] + ".yml"
+	case ".yml":
+		return path[:len(path)-len(".yml")] + ".yaml"
+	default:
+		return ""
+	}
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func defaults() *Config {
@@ -144,6 +182,9 @@ func (c *Config) mergeFile(fileCfg *Config) {
 	}
 	if fileCfg.ClickHouseTable != "" {
 		c.ClickHouseTable = fileCfg.ClickHouseTable
+	}
+	if len(fileCfg.ChannelNames) > 0 {
+		c.ChannelNames = fileCfg.ChannelNames
 	}
 }
 

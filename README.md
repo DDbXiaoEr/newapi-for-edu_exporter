@@ -28,7 +28,7 @@ make build
 
 ## 配置
 
-数据库连接通过配置文件指定（默认 `config.yaml` / `config.yml`），也可以通过环境变量覆盖。兼容 new-api 的 `SQL_DSN` / `LOG_SQL_DSN`。
+数据库连接通过配置文件指定（默认当前目录 `config.yaml`，其次 `config.yml`），也可以通过环境变量覆盖。兼容 new-api 的 `SQL_DSN` / `LOG_SQL_DSN`。
 
 ### 配置文件 (`config.yaml`)
 
@@ -43,6 +43,9 @@ postgres_database: newapi
 postgres_sslmode: disable
 clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
 clickhouse_table: logs
+channel_names:
+  1: OpenAI
+  2: Claude
 ```
 
 也可直接写 `postgres_dsn: postgresql://root:123456@localhost:5432/newapi?sslmode=disable`。
@@ -55,7 +58,7 @@ clickhouse_table: logs
 
 | 参数 | 默认值 | 说明 |
 |---|---|---|
-| `-config` | 自动检测 | YAML 配置文件路径 |
+| `-config` | `config.yaml` | YAML 配置文件路径（当前目录） |
 | `-out` | `output` | 文件导出输出目录 |
 | `-format` | `json` | 输出格式：`json` / `csv` |
 | `-serve` | (空) | 启动 Prometheus HTTP 服务，值为端口号 |
@@ -66,7 +69,7 @@ clickhouse_table: logs
 
 | 环境变量 | 默认值 | 说明 |
 |---|---|---|
-| `NEWAPI_CONFIG_FILE` | 自动检测 `config.yaml` / `config.yml` | 配置文件路径 |
+| `NEWAPI_CONFIG_FILE` | 当前目录 `config.yaml` | 配置文件路径 |
 | `NEWAPI_DB_TYPE` | `postgres` | 主数据库类型：`postgres` / `mysql` |
 | `NEWAPI_OUTPUT_FORMAT` | `json` | 输出格式 |
 | `NEWAPI_POSTGRES_DSN` / `SQL_DSN` | (空) | PostgreSQL DSN |
@@ -94,17 +97,37 @@ clickhouse_table: logs
 | `newapi_total_tokens` | Gauge | quota_data 中 token_used 总和 |
 | `newapi_total_requests` | Gauge | quota_data 中 count 总和 |
 | `newapi_token_tps` | Gauge | 近 60 秒消耗日志的 token/s（配置 ClickHouse 后） |
+| `newapi_channel_token_tps` | Gauge | 近 60 秒各渠道 token/s（`channel_id`；`channel_name` 来自配置 `channel_names`） |
 | `newapi_log_tokens` | Gauge | ClickHouse 日志 prompt+completion token 总和 |
 | `newapi_log_quota` | Gauge | ClickHouse 日志 quota 总和 |
 
-### Prometheus 配置
+### Prometheus + Grafana
 
-```yaml
-scrape_configs:
-  - job_name: 'newapi_exporter'
-    static_configs:
-      - targets: ['localhost:9090']
+本机 3000 已被 new-api 占用，Grafana 映射到 **3001**；Prometheus 占用 **9090**，exporter 请用 **9091**。
+
+```bash
+# 1. 启动 exporter
+./bin/newapi-exporter -serve 9091
+
+# 2. 启动 Prometheus + Grafana（使用本机已有镜像）
+docker compose up -d
 ```
+
+| 服务 | 地址 | 说明 |
+|---|---|---|
+| Exporter | http://localhost:9091/metrics | Prometheus scrape 目标 |
+| Prometheus | http://localhost:9090 | 抓取 `host.docker.internal:9091` |
+| Grafana | http://localhost:3001 | 账号 `admin` / `admin` |
+
+Dashboard：http://localhost:3001/d/newapi-overview/newapi-overview
+
+![Grafana Dashboard](newapi-grafana-dashboard.png)
+
+![Grafana Dashboard（下半部分）](newapi-grafana-dashboard-bottom.png)
+
+![Grafana Overview](grafana-overview.png)
+
+![渠道 Token TPS](grafana-channel-tps.png)
 
 ## 导出文件
 
@@ -115,6 +138,7 @@ scrape_configs:
 - `tokens.{format}` - API 令牌信息
 - `users.{format}` - 用户信息
 - `logs.{format}` - ClickHouse 请求日志（配置后）
+- `channel_tps.{format}` - 各渠道近 60 秒 TPS（配置 ClickHouse 后）
 
 ## 开发
 

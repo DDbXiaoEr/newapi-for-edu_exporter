@@ -20,7 +20,7 @@ Primary data lives in PostgreSQL (or MySQL). Request/consume logs may live in Cl
 │   ├── token.go         # Token struct
 │   ├── user.go          # User struct
 │   ├── log.go           # ClickHouse log struct
-│   └── statistics.go    # Statistics struct
+│   └── statistics.go    # Statistics / ChannelTPS structs
 ├── exporter/
 │   └── exporter.go      # Query + file export logic (json/csv)
 ├── metrics/
@@ -59,7 +59,7 @@ go run . -serve 9090
 **Flags:**
 | Flag | Default | Description |
 |---|---|---|
-| `-config` | (auto-detect) | Path to YAML configuration file |
+| `-config` | `config.yaml` | Path to YAML configuration file (current directory) |
 | `-out` | `output` | Output directory (file export mode) |
 | `-format` | `json` | Output format: `json` or `csv` |
 | `-serve` | (none) | Start Prometheus HTTP server on port |
@@ -76,6 +76,9 @@ postgres_database: newapi
 postgres_sslmode: disable
 clickhouse_dsn: clickhouse://default:@localhost:9000/newapi_audit
 clickhouse_table: logs
+channel_names:
+  1: OpenAI
+  2: Claude
 ```
 
 Alternatively set `postgres_dsn` / `SQL_DSN` to a full URL, matching new-api.
@@ -83,7 +86,7 @@ Alternatively set `postgres_dsn` / `SQL_DSN` to a full URL, matching new-api.
 **Environment variables (override config file):**
 | Variable | Default |
 |---|---|
-| `NEWAPI_CONFIG_FILE` | (auto-detect `config.yaml`/`config.yml`) |
+| `NEWAPI_CONFIG_FILE` | `config.yaml` in current directory |
 | `NEWAPI_OUTPUT_FORMAT` | `json` |
 | `NEWAPI_DB_TYPE` | `postgres` |
 | `NEWAPI_POSTGRES_DSN` / `SQL_DSN` | (empty; built from host/user/...) |
@@ -111,6 +114,7 @@ When running with `-serve`, exposes at `/metrics`:
 | `newapi_total_tokens` | Gauge | Sum of `token_used` in quota_data |
 | `newapi_total_requests` | Gauge | Sum of `count` in quota_data |
 | `newapi_token_tps` | Gauge | Tokens/sec from consume logs over last 60s (if ClickHouse configured) |
+| `newapi_channel_token_tps` | Gauge | Per-channel tokens/sec over last 60s (`channel_id`, `channel_name` from `channel_names`) |
 | `newapi_log_tokens` | Gauge | Sum of prompt+completion tokens in logs |
 | `newapi_log_quota` | Gauge | Sum of quota in logs |
 

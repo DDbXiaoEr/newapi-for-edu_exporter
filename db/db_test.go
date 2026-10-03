@@ -74,3 +74,13 @@ func TestIsValidIdent(t *testing.T) {
 		t.Fatal("expected invalid identifiers to be rejected")
 	}
 }
+
+func TestParseChannelNames(t *testing.T) {
+	got := parseChannelNames(map[string]string{"1": "OpenAI", "2": "Claude", "bad": "skip"})
+	if got[1] != "OpenAI" || got[2] != "Claude" {
+		t.Fatalf("unexpected names: %#v", got)
+	}
+	if _, ok := got[0]; ok {
+		t.Fatal("invalid id should be skipped")
+	}
+}
